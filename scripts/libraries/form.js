@@ -16,7 +16,8 @@ function isNumberDefined(input) {
 export class MessageForm {
 	constructor() {
 		this.form = new MessageFormData();
-		this.callbacks = [null, null];
+		this.callbacks = [false, false];
+		this.lastCalled = false;
 	}
 	/**
 	 * @method title
@@ -46,8 +47,7 @@ export class MessageForm {
 	 */
 	button1(text, callback) {
 		if (typeof text !== 'string') throw new Error(`text: ${label}, at params[0] is not a String!`);
-		if (callback && !(callback instanceof Function)) throw new Error(`callback at params[1] is defined and is not a Function!`);
-		this.callbacks[1] = callback;
+		this.lastCalled = 1;
 		this.form.button1(text);
 		return this;
 	}
@@ -59,10 +59,18 @@ export class MessageForm {
 	 */
 	button2(text, callback) {
 		if (typeof text !== 'string') throw new Error(`text: ${label}, at params[0] is not a String!`);
-		if (callback && !(callback instanceof Function)) throw new Error(`callback at params[1] is defined and is not a Function!`);
-		this.callbacks[0] = callback;
+		this.lastCalled = 2;
 		this.form.button2(text);
 		return this;
+	}
+	/**
+	 * @method callback
+	 * @param {(player:Player) => any} callback 
+	 */
+	callback(callback) {
+		if (!(callback instanceof Function)) throw new Error(`callback at params[1] is not a Function!`);
+
+		this.callbacks[this.lastCalled - 1] = callback;
 	}
 	/**
 	 * @method show
@@ -124,15 +132,22 @@ export class ActionForm {
 	 * @method body
 	 * @param {String} text 
 	 * @param {String} iconPath 
-	 * @param {(player: Player, i: Number) => {}} callback 
 	 * @returns {ActionForm}
 	 */
-	button(text, iconPath, callback) {
+	button(text, iconPath) {
 		if (typeof text !== 'string') throw new Error(`text: ${label}, at params[0] is not a String!`);
 		if (iconPath && typeof iconPath !== 'string') throw new Error(`iconPath: ${defaultValue}, at params[1] is defined and is not a String!`);
-		if (callback && !(callback instanceof Function)) throw new Error(`callback at params[2] is defined and is not a Function!`);
-		this.callbacks.push(callback);
+		this.callbacks.push(false);
 		this.form.button(text, iconPath);
+		return this;
+	}
+	/**
+	 * @method callback
+	 * @param {(player: Player) => any} callback 
+	 */
+	callback(callback) {
+		if (!(callback instanceof Function)) throw new Error(`callback at params[1] is not a Function!`);
+		this.callbacks[this.callbacks.length - 1] = callback;
 		return this;
 	}
 	/**
@@ -211,15 +226,10 @@ export class ModalForm {
 	 * @param {Number} defaultValueIndex?
 	 * @param {(player: Player, selection: Number, i: number) => {}} callback?
 	 */
-	dropdown(label, options, defaultValueIndex = 0, callback) {
+	dropdown(label, defaultValueIndex = 0) {
 		if (typeof label !== 'string') throw new Error(`label: ${label}, at params[0] is not a String!`);
-		if (!(options instanceof Array)) throw new Error(`params[1] is not an Array!`);
-		options.forEach((object, i) => { if (!(object instanceof Object)) throw new Error(`index: ${i}, in params[1] is not an Object!`); });
-		const optionStrings = options.map(({ option }, i) => { if (typeof option !== 'string') throw new Error(`property option: ${option}, at index: ${i}, in params[1] is not a String!`); return option; });
-		const optionCallbacks = options.map(({ callback }) => { if (callback && !(callback instanceof Function)) throw new Error(`property callback at index: ${i}, in params[1] is not a Function!`); else if (callback) return callback; });
 		if (!isNumberDefined(defaultValueIndex) && !Number.isInteger(defaultValueIndex)) throw new Error(`defaultValueIndex: ${defaultValueIndex}, at params[2] is defined and is not an Integer!`);
-		if (callback && !(callback instanceof Function)) throw new Error(`callback at params[3] is defined and is not a Function!`);
-		this.callbacks.push([optionCallbacks, callback]);
+		this.callbacks.push(false);
 		this.form.dropdown(label, optionStrings, defaultValueIndex);
 		return this;
 	}
