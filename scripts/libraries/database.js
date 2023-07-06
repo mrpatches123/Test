@@ -1,4 +1,4 @@
-import { BlockAreaSize, world, Entity } from "@minecraft/server";
+import { BlockAreaSize, world, Entity, system } from "@minecraft/server";
 import { overworld, nether, end, content, native } from '../utilities.js';
 import time from "./time.js";
 // const overworld = world.getDimension('overworld');
@@ -101,6 +101,10 @@ const databasesArea = new BlockAreaSize(16, 1, 16);
 export class Databases {
     constructor() {
         this.__queuedSaves = [];
+        world.afterEvents.worldInitialize.subscribe(() => {
+            this.initialize();
+        });
+        this.subscribedSaveQueue = false;
     }
     /**
      * @method initialize starts the database
@@ -319,6 +323,20 @@ export class Databases {
         });
     }
     /**
+     * @method subscribeSaveQueue
+     */
+    subscribeSaveQueue() {
+        if (this.subscribedSaveQueue) return;
+        this.subscribedSaveQueue = true;
+        const runId = system.runInterval(() => {
+            if (!this.__queuedSaves.length) return system.clearRun(runId);
+            const dbToSave = this.__queuedSaves[0];
+            this.save(dbToSave);
+            this.__queuedSaves.shift();
+
+        });
+    }
+    /**
      * @method queueSave saves the database in a queue for better performace in ticked saves
      * @param {String} name Database name
      */
@@ -326,6 +344,7 @@ export class Databases {
         if (this[name]) {
             if (!this.__queuedSaves.some(item => item === name)) {
                 this.__queuedSaves.push(name);
+                this.subscribeSaveQueue();
             }
         } else {
             throw new Error(`Database: ${name}, does not exist`);
