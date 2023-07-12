@@ -1,8 +1,15 @@
-import { BlockAreaSize, world, Entity, system } from "@minecraft/server";
-import { overworld, nether, end, content, native } from '../utilities.js';
-import time from "./time.js";
+import { BlockAreaSize, world, Entity, system, DynamicPropertiesDefinition, EntityTypes } from "@minecraft/server";
+
+const content = {
+    warn: (...messages) => {
+        console.warn(messages.map(message => JSON.stringify(message, (key, value) => (value instanceof Function) ? '<Function>' : value)).join(' '));
+    }
+};
+const overworld = world.getDimension('overworld');
 // const overworld = world.getDimension('overworld');
-const chunkSize = 32763;
+const postion = 11;
+const databaseNameLength = 256;
+const chunkSize = 67108864 - postion - databaseNameLength;
 // import { compress, decompress } from '../zip_255cs.js';
 
 
@@ -101,7 +108,12 @@ const databasesArea = new BlockAreaSize(16, 1, 16);
 export class Databases {
     constructor() {
         this.__queuedSaves = [];
-        world.afterEvents.worldInitialize.subscribe(() => {
+        world.afterEvents.worldInitialize.subscribe((event) => {
+            const registry = new DynamicPropertiesDefinition();
+            registry.defineNumber('order');
+            registry.defineString('databaseName', databaseNameLength);
+            registry.defineString('data', chunkSize);
+            event.propertyRegistry.registerEntityTypeDynamicProperties(registry, EntityTypes.get('patches:database'));
             this.initialize();
         });
         this.subscribedSaveQueue = false;
