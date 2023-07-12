@@ -142,15 +142,17 @@ export class Databases {
 
         });
         entityArray.forEach(entities => {
-            time.start('databaseInitTest');
+
             entities = entities.splice(2).filter(entity => entity);
             const json = [];
             if (entities) {
-                const name = entities[0].getTags().find(tag => tag.includes('dbName:')).replace('dbName:', '');
+                const name = entities[0].getDynamicProperty('databaseName');
                 // content.warn({ dbNmae: name });
                 entities.forEach(entity => {
-                    const order = entity.getTags().find(tag => tag.includes('dbOrder:')).replace('dbOrder:', '');
-                    json.push([order, entity.nameTag]);
+                    const order = entity.getDynamicProperty('order');
+                    const data = entity.getDynamicProperty('data');
+                    json.push([order, data]);
+
                 });
                 if (name) {
                     this[name] = new Database(JSON.parse(json.sort((a, b) => a[0] - b[0]).map(([a, b]) => b).join('')));
@@ -238,12 +240,12 @@ export class Databases {
             let entities = overworld.getEntitiesAtBlockLocation({ x: coords.x, y: -64, z: coords.z });
             // content.warn({ entities: entities.map(({ nameTag }) => nameTag) });
             if (entities.length) {
-                entities = entities.filter(({ typeId }) => typeId === 'patches:database');
-                const name = entities[0].getTags().find(tag => tag.includes('dbName:')).replace('dbName:', '');
+                entities = entities.filter((entity) => entity.typeId === 'patches:database' && entity.getDynamicProperty('databaseName') === name);
                 const json = [];
                 entities.forEach(entity => {
-                    const order = entity.getTags().find(tag => tag.includes('dbOrder:')).replace('dbOrder:', '');
-                    json.push([order, entity.nameTag]);
+                    const order = entity.getDynamicProperty('order');
+                    const data = entity.getDynamicProperty('data');
+                    json.push([order, data]);
                 });
                 const string = (json.sort((a, b) => a[0] - b[0]).map(([a, b]) => b).join(''));
                 // content.warn({ string });
@@ -288,11 +290,11 @@ export class Databases {
             console.warn(x, z);
             time.start('test37763');
             const stringifiedDatabase = (JSON.stringify(this[name]));
-            const stringify = time.end('test37763');
+
             content.warn({ name, length: stringifiedDatabase.length, stringifiedDatabase });
             let size = (stringifiedDatabase.length / chunkSize) | 0;
             const database = Array(++size);
-            time.start('test37763');
+
             for (let i = 0, offset = 0; i < size; i++, offset += chunkSize) {
                 database[i] = stringifiedDatabase.substr(offset, chunkSize);
             }
@@ -314,10 +316,9 @@ export class Databases {
             entities = overworld.getEntitiesAtBlockLocation({ x, y: -64, z });
             if (entities.length) {
                 entities.forEach((entity, i) => {
-                    entity.nameTag = database[i];
-                    entity.removeAllTags();
-                    entity.addTag(`dbOrder:${i}`);
-                    entity.addTag(`dbName:${name}`);
+                    entity.setDynamicProperty('data', database[i]);
+                    entity.setDynamicProperty('order', i);
+                    entity.setDynamicProperty('databaseName', name);
                 });
                 entitySet = time.end('test37763');
             } else {
