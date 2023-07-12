@@ -1,8 +1,15 @@
-import { BlockAreaSize, world, Entity } from "@minecraft/server";
-import { overworld, nether, end, content, native } from '../utilities.js';
-import time from "./time.js";
+import { BlockAreaSize, world, Entity, system, DynamicPropertiesDefinition, EntityTypes } from "@minecraft/server";
+
+const content = {
+    warn: (...messages) => {
+        console.warn(messages.map(message => JSON.stringify(message, (key, value) => (value instanceof Function) ? '<Function>' : value)).join(' '));
+    }
+};
+const overworld = world.getDimension('overworld');
 // const overworld = world.getDimension('overworld');
-const chunkSize = 32763;
+const postion = 11;
+const databaseNameLength = 256;
+const chunkSize = 67108864 - postion - databaseNameLength;
 // import { compress, decompress } from '../zip_255cs.js';
 
 
@@ -101,6 +108,15 @@ const databasesArea = new BlockAreaSize(16, 1, 16);
 export class Databases {
     constructor() {
         this.__queuedSaves = [];
+        world.afterEvents.worldInitialize.subscribe((event) => {
+            const registry = new DynamicPropertiesDefinition();
+            registry.defineNumber('order');
+            registry.defineString('databaseName', databaseNameLength);
+            registry.defineString('data', chunkSize);
+            event.propertyRegistry.registerEntityTypeDynamicProperties(registry, EntityTypes.get('patches:database'));
+            this.initialize();
+        });
+        this.subscribedSaveQueue = false;
     }
     /**
      * @method initialize starts the database
@@ -126,15 +142,17 @@ export class Databases {
 
         });
         entityArray.forEach(entities => {
-            time.start('databaseInitTest');
+
             entities = entities.splice(2).filter(entity => entity);
             const json = [];
             if (entities) {
-                const name = entities[0].getTags().find(tag => tag.includes('dbName:')).replace('dbName:', '');
+                const name = entities[0].getDynamicProperty('databaseName');
                 // content.warn({ dbNmae: name });
                 entities.forEach(entity => {
-                    const order = entity.getTags().find(tag => tag.includes('dbOrder:')).replace('dbOrder:', '');
-                    json.push([order, entity.nameTag]);
+                    const order = entity.getDynamicProperty('order');
+                    const data = entity.getDynamicProperty('data');
+                    json.push([order, data]);
+
                 });
                 if (name) {
                     this[name] = new Database(JSON.parse(json.sort((a, b) => a[0] - b[0]).map(([a, b]) => b).join('')));
@@ -222,12 +240,12 @@ export class Databases {
             let entities = overworld.getEntitiesAtBlockLocation({ x: coords.x, y: -64, z: coords.z });
             // content.warn({ entities: entities.map(({ nameTag }) => nameTag) });
             if (entities.length) {
-                entities = entities.filter(({ typeId }) => typeId === 'patches:database');
-                const name = entities[0].getTags().find(tag => tag.includes('dbName:')).replace('dbName:', '');
+                entities = entities.filter((entity) => entity.typeId === 'patches:database' && entity.getDynamicProperty('databaseName') === name);
                 const json = [];
                 entities.forEach(entity => {
-                    const order = entity.getTags().find(tag => tag.includes('dbOrder:')).replace('dbOrder:', '');
-                    json.push([order, entity.nameTag]);
+                    const order = entity.getDynamicProperty('order');
+                    const data = entity.getDynamicProperty('data');
+                    json.push([order, data]);
                 });
                 const string = (json.sort((a, b) => a[0] - b[0]).map(([a, b]) => b).join(''));
                 // content.warn({ string });
@@ -272,11 +290,11 @@ export class Databases {
             console.warn(x, z);
             time.start('test37763');
             const stringifiedDatabase = (JSON.stringify(this[name]));
-            const stringify = time.end('test37763');
+
             content.warn({ name, length: stringifiedDatabase.length, stringifiedDatabase });
             let size = (stringifiedDatabase.length / chunkSize) | 0;
             const database = Array(++size);
-            time.start('test37763');
+
             for (let i = 0, offset = 0; i < size; i++, offset += chunkSize) {
                 database[i] = stringifiedDatabase.substr(offset, chunkSize);
             }
@@ -298,10 +316,9 @@ export class Databases {
             entities = overworld.getEntitiesAtBlockLocation({ x, y: -64, z });
             if (entities.length) {
                 entities.forEach((entity, i) => {
-                    entity.nameTag = database[i];
-                    entity.removeAllTags();
-                    entity.addTag(`dbOrder:${i}`);
-                    entity.addTag(`dbName:${name}`);
+                    entity.setDynamicProperty('data', database[i]);
+                    entity.setDynamicProperty('order', i);
+                    entity.setDynamicProperty('databaseName', name);
                 });
                 entitySet = time.end('test37763');
             } else {
@@ -319,6 +336,20 @@ export class Databases {
         });
     }
     /**
+     * @method subscribeSaveQueue
+     */
+    subscribeSaveQueue() {
+        if (this.subscribedSaveQueue) return;
+        this.subscribedSaveQueue = true;
+        const runId = system.runInterval(() => {
+            if (!this.__queuedSaves.length) return system.clearRun(runId);
+            const dbToSave = this.__queuedSaves[0];
+            this.save(dbToSave);
+            this.__queuedSaves.shift();
+
+        });
+    }
+    /**
      * @method queueSave saves the database in a queue for better performace in ticked saves
      * @param {String} name Database name
      */
@@ -326,6 +357,7 @@ export class Databases {
         if (this[name]) {
             if (!this.__queuedSaves.some(item => item === name)) {
                 this.__queuedSaves.push(name);
+                this.subscribeSaveQueue();
             }
         } else {
             throw new Error(`Database: ${name}, does not exist`);
