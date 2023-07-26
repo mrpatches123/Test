@@ -30,7 +30,7 @@
 			"language": "javascript",
 			"uuid": "d8bccf9a-e18b-4bc6-b87b-e82d9077995b",
 			"description": "mojang-minecraft module, required to use the mojang-minecraft module",
-			"entry": "index.js",
+			"entry": "index2.js",
 			"version": "1.0.0-beta"
 		}
 	],
