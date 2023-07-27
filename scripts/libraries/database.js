@@ -8,8 +8,8 @@ const content = {
 const overworld = world.getDimension('overworld');
 // const overworld = world.getDimension('overworld');
 const postion = 11;
-const databaseNameLength = 256;
-const chunkSize = 67108864 - postion - databaseNameLength;
+const databaseNameLength = 256 * 2;
+const chunkSize = 131072 / 2 - postion - databaseNameLength;
 // import { compress, decompress } from '../zip_255cs.js';
 
 
@@ -170,7 +170,8 @@ export class Databases {
      * @returns {{x:Number,z:Number}}
      */
     _getRandCoords() {
-        return coords256.filter(({ x, z }) => !(this ?? {}).some((key, { __db_properties: { coords: { x: ex, z: ez } = {} } = {} }) => x === ex && z === ez)).random();
+        const currentCoords = coords256.filter(({ x, z }) => !Object.entries(this ?? {}).some(([key, { __db_properties: { coords: { x: ex, z: ez } = {} } = {} }]) => x === ex && z === ez))
+	return currentCoords[Math.floor(Math.random() * currentCoords.length)];
     }
     getPropertiesObject() {
         return { coords: this._getRandCoords()/*, saveTicks: (Object.keys(this).length + 1) * 2 */ };
