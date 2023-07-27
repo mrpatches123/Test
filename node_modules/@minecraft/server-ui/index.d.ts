@@ -42,12 +42,17 @@
  * ```json
  * {
  *   "module_name": "@minecraft/server-ui",
- *   "version": "1.0.0"
+ *   "version": "1.1.0"
  * }
  * ```
  *
  */
 import * as minecraftserver from '@minecraft/server';
+export enum FormCancelationReason {
+    UserBusy = 'UserBusy',
+    UserClosed = 'UserClosed',
+}
+
 export enum FormRejectReason {
     MalformedResponse = 'MalformedResponse',
     PlayerQuit = 'PlayerQuit',
@@ -119,6 +124,19 @@ export class ActionFormResponse extends FormResponse {
  */
 export class FormResponse {
     private constructor();
+    /**
+     * @remarks
+     * Contains additional details as to why a form was canceled.
+     *
+     */
+    readonly cancelationReason?: FormCancelationReason;
+    /**
+     * @remarks
+     * If true, the form was canceled by the player (e.g., they
+     * selected the pop-up X close button).
+     *
+     */
+    readonly canceled: boolean;
 }
 
 /**
