@@ -3,19 +3,21 @@ import { Player, world } from "@minecraft/server";
 
 
 export const content = {
-	warn(...messages) {
+	warn(...messages: any[]) {
 		console.warn(messages.map(message => JSON.stringify(message, (key, value) => (value instanceof Function) ? '<f>' : value)).join(' '));
 	},
-	chatFormat(...messages) {
+	chatFormat(...messages: any[]) {
 		world.sendMessage(messages.map(message => JSON.stringify(message, (key, value) => (value instanceof Function) ? value.toString().replaceAll('\r\n', '\n') : value, 4)).join(' '));
 	}
 };
-function isNumberDefined(input) {
+function isNumberDefined(input: any) {
 	return (input !== false && input !== null && input !== undefined && input !== NaN && input !== Infinity);
 }
 export class MessageForm {
 	form: MessageFormData;
-	callbacks: [Boolean, Boolean];
+	callbacks: [boolean | ((player: Player, i: Number) => void), boolean | ((player: Player, i: Number) => void)];
+	lastCalled: number | false;
+
 	constructor() {
 		this.form = new MessageFormData();
 		this.callbacks = [false, false];
@@ -26,7 +28,7 @@ export class MessageForm {
 	 * @param {String} titleText 
 	 * @returns {MessageForm}
 	 */
-	title(titleText) {
+	title(titleText: string): this {
 		if (typeof titleText !== 'string') throw new Error(`titleText: ${titleText}, at params[0] is not a String!`);
 		this.form.title(titleText);
 		return this;
@@ -36,7 +38,7 @@ export class MessageForm {
 	 * @param {String} bodyText 
 	 * @returns {MessageForm}
 	 */
-	body(bodyText) {
+	body(bodyText: string): this {
 		if (typeof bodyText !== 'string') throw new Error(`bodyText: ${titleText}, at params[0] is not a String!`);
 		this.form.body(bodyText);
 		return this;
@@ -47,9 +49,9 @@ export class MessageForm {
 	 * @param {(player: Player, i: Number) => {}} callback 
 	 * @returns {MessageForm}
 	 */
-	button1(text, callback) {
+	button1(text: string): this {
 		if (typeof text !== 'string') throw new Error(`text: ${label}, at params[0] is not a String!`);
-		this.callbacks[0] = callback;
+		this.lastCalled = 0;
 		this.form.button1(text);
 		return this;
 	}
@@ -59,9 +61,9 @@ export class MessageForm {
 	 * @param {(player: Player, i: Number) => {}} callback 
 	 * @returns {MessageForm}
 	 */
-	button2(text: string, callback: (player: Player, i: Number) => void): this {
+	button2(text: string): this {
 		if (typeof text !== 'string') throw new Error(`text: ${label}, at params[0] is not a String!`);
-		this.callbacks[1] = callback;
+		this.lastCalled = 0;
 		this.form.button2(text);
 		return this;
 	}
@@ -69,10 +71,12 @@ export class MessageForm {
 	 * @method callback
 	 * @param {(player:Player) => any} callback 
 	 */
-	callback(callback) {
+	callback(callback: (player: Player, i: Number) => void) {
 		if (!(callback instanceof Function)) throw new Error(`callback at params[1] is not a Function!`);
+		if (this.lastCalled === false) throw new Error('form.callback method must only be called after a button1 or button2 call!');
 
-		this.callbacks[this.lastCalled - 1] = callback;
+		this.callbacks[this.lastCalled] = callback;
+		if (this.lastCalled === 1) this.lastCalled = false;
 	}
 	/**
 	 * @method show
