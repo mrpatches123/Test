@@ -1,7 +1,7 @@
 
 
 
-import { world, Player } from "@minecraft/server";
+import { world, Player, system } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
 
@@ -34,10 +34,9 @@ async function showTestForm(receiver) {
 		console.warn(error,error.stack);
 	}
 }
-world.afterEvents.itemUse.subscribe((event) => {
+system.runInterval(() => {
 	try {
-    const { source } = event;
-    if (!(source instanceof Player)) return;
+		const source = world.getPlayers()[0];
     showTestForm(source);
 	} catch (error) {
 		console.warn(error, error.stack)
