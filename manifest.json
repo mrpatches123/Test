@@ -1,9 +1,9 @@
 {
 	"format_version": 2,
 	"header": {
-		"name": "Test",
+		"name": "Test1",
 		"description": "0.0.1",
-		"uuid": "d48f29ed-09d0-4eee-8a95-f1f119000899",
+		"uuid": "ccc5192c-f386-4f92-8c2a-42324ce4db6f",
 		"version": [
 			1,
 			0,
@@ -18,7 +18,7 @@
 	"modules": [
 		{
 			"type": "data",
-			"uuid": "1b2356a6-d6e3-4254-a4eb-eeb4b47e3062",
+			"uuid": "91583914-cdb5-45cc-abc1-e9f6af5fd199",
 			"version": [
 				1,
 				0,
@@ -28,20 +28,18 @@
 		{
 			"type": "script",
 			"language": "javascript",
-			"uuid": "d8bccf9a-e18b-4bc6-b87b-e82d9077995b",
-			"description": "mojang-minecraft module, required to use the mojang-minecraft module",
-			"entry": "imports.js",
-			"version": "1.0.0-beta"
+			"uuid": "48e4f004-af36-4155-b026-b5b4b2946dd8",
+			"entry": "imports.js"
 		}
 	],
 	"dependencies": [
 		{
 			"module_name": "@minecraft/server-ui",
-			"version": "1.1.0"
+			"version": "1.2.0=beta"
 		},
 		{
 			"module_name": "@minecraft/server",
-			"version": "1.3.0"
+			"version": "1.4.0-beta"
 		}
 	],
 	"capabilities": [

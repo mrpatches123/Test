@@ -1,2 +1,2 @@
 import './permision_fix.js';
-import 'main.js';
+import './index2.js';

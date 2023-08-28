@@ -69,7 +69,6 @@ export class MessageForm {
 	 */
 	callback(callback) {
 		if (!(callback instanceof Function)) throw new Error(`callback at params[1] is not a Function!`);
-
 		this.callbacks[this.lastCalled - 1] = callback;
 	}
 	/**
